@@ -33,8 +33,9 @@ type Request struct {
 }
 
 type Assert struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
+	Description string `yaml:"description"`
+	Key         string `yaml:"key"`
+	Value       string `yaml:"value"`
 }
 type KeyValue struct {
 	Key   string `yaml:"key"`
@@ -136,6 +137,7 @@ func run(requestName string) {
 				println("👀 Asserts:")
 			}
 			for _, assert := range request.Asserts {
+				println("" + AnsiColor(assert.Description, 53, 177, 226))
 				if assert.Key == "status_code" {
 					if strconv.Itoa(resp.StatusCode) != assert.Value {
 						errors++

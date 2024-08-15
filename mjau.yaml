@@ -30,6 +30,9 @@ requests:
       - description: "status code is 404"
         key: status_code
         value: 404
+      - description: "body is correct"
+        key: body
+        value: '404 page not found'
       
 
 
