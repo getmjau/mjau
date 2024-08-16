@@ -1,4 +1,4 @@
-module github.com/temomailersolutions/mjau
+module github.com/fr3h4g/mjau
 
 go 1.22.1
 
