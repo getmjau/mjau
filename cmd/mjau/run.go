@@ -3,7 +3,6 @@ package mjau
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -49,13 +48,13 @@ func loadConfig(configfile string) Config {
 
 	file, err := os.ReadFile(configfile)
 	if err != nil {
-		log.Fatal(err)
+		println(err)
 		os.Exit(1)
 	}
 
 	err = yaml.Unmarshal(file, &config)
 	if err != nil {
-		log.Fatal(err)
+		println(err)
 		os.Exit(1)
 	}
 
@@ -94,7 +93,8 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 				strings.NewReader(request.Body),
 			)
 			if err != nil {
-				log.Fatal(err)
+				println(err)
+				os.Exit(1)
 			}
 			for _, header := range request.Headers {
 				req.Header.Set(header.Key, header.Value)
@@ -103,14 +103,14 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 			resp, err := http.DefaultClient.Do(req)
 			elapsed := time.Since(start)
 			if err != nil {
-				log.Fatal(err)
+				println(err)
 				os.Exit(1)
 			}
 			println("🕒 Request took " + elapsed.String())
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				log.Fatal(err)
+				println(err)
 			}
 			body = []byte(strings.TrimSuffix(string(body), "\n"))
 			println(
