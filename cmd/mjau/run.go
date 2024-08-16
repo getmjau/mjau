@@ -1,4 +1,4 @@
-package main
+package mjau
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
@@ -42,11 +43,11 @@ type KeyValue struct {
 	Value string `yaml:"value"`
 }
 
-func loadConfig() Config {
+func loadConfig(configfile string) Config {
 	// load mjau.yaml file
 	var config Config
 
-	file, err := os.ReadFile("mjau.yaml")
+	file, err := os.ReadFile(configfile)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -77,8 +78,8 @@ func AnsiColor(str string, r, g, b int) string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", r, g, b, str)
 }
 
-func run(requestName string) {
-	config := loadConfig()
+func RunRequest(cmd *cobra.Command, requestName string) {
+	config := loadConfig(cmd.Flag("config").Value.String())
 	errors := 0
 	found := false
 	for _, request := range config.Requests {
@@ -172,28 +173,33 @@ func run(requestName string) {
 	}
 }
 
-func main() {
-	args := os.Args[1:]
-	if len(args) == 0 {
-		println("Please provide a command to run. Example: mjau run <request>")
-		os.Exit(1)
-	}
-	command := args[0]
-	if command == "run" {
-		if len(args) == 1 {
-			println("Please provide a request to run. Example: mjau run healthz")
-			os.Exit(1)
-		}
-		run(args[1])
-	}
-	if command == "runall" {
-		config := loadConfig()
+func init() {
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(runAllCmd)
+}
+
+var runCmd = &cobra.Command{
+	Use:   "run <request>",
+	Short: "Run a request",
+	Long:  `Run a request`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		RunRequest(cmd, args[0])
+	},
+}
+
+var runAllCmd = &cobra.Command{
+	Use:   "runall",
+	Short: "Run all requests",
+	Long:  `Run all requests`,
+	Run: func(cmd *cobra.Command, args []string) {
+		config := loadConfig(cmd.Flag("config").Value.String())
 		for i, request := range config.Requests {
 			if i > 0 {
 				println("----------------------------------------")
 			}
-			run(request.Name)
+			RunRequest(cmd, request.Name)
 		}
-	}
-	os.Exit(0)
+
+	},
 }
