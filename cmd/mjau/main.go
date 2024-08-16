@@ -43,6 +43,7 @@ type KeyValue struct {
 }
 
 func loadConfig() Config {
+	// load mjau.yaml file
 	var config Config
 
 	file, err := os.ReadFile("mjau.yaml")
@@ -74,14 +75,6 @@ func (config Config) replaceVariables(request Request, environment Environment) 
 
 func AnsiColor(str string, r, g, b int) string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", r, g, b, str)
-}
-
-func padStringRowsLeft(str string) string {
-	lines := strings.Split(str, "\n")
-	for i, line := range lines {
-		lines[i] = "  " + line
-	}
-	return strings.Join(lines, "\n")
 }
 
 func run(requestName string) {
