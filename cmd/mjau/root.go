@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Version string
+
 var rootCmd = &cobra.Command{
 	Use:   "mjau",
 	Short: "Mjau is a api testing tool.",
