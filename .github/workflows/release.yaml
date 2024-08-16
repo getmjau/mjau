@@ -2,6 +2,10 @@ on:
   release:
     types: [created]
 
+permissions:
+    contents: write
+    packages: write
+
 jobs:
   release:
     name: release
@@ -24,4 +28,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
+          project_path: "./cmd/mjau"
+          binary_name: "mjau"
           overwrite: true
