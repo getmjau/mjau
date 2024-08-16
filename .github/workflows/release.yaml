@@ -30,6 +30,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          ldflags: -X "main.version=${{ env.VERSION }}"
+          ldflags: "-X main.version=${{ env.VERSION }}"
           binary_name: "mjau"
           overwrite: true
