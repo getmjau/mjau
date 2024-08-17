@@ -81,11 +81,11 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 	config := loadConfig(cmd.Flag("config").Value.String())
 	errors := 0
 	found := false
+	println("😺 Running request " + requestName)
 	for _, request := range config.Requests {
 		if request.Name == requestName {
 			found = true
 			request = config.replaceVariables(request, config.Environments[0])
-			println("😺 Running request - " + request.Name)
 
 			req, err := http.NewRequest(
 				request.Method,
@@ -160,9 +160,8 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 
 		}
 	}
-	println("")
 	if !found {
-		println("😿 Request not found")
+		println("😿 Request " + requestName + " not found")
 		os.Exit(1)
 	}
 	if errors > 0 {
@@ -179,12 +178,22 @@ func init() {
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run <request>",
-	Short: "Run a request",
-	Long:  `Run a request`,
+	Use:   "run <request(s)>",
+	Short: "Run one or more requests",
+	Long:  `Run one or more requests separated by comma ,`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		RunRequest(cmd, args[0])
+		if strings.Contains(args[0], ",") {
+			requests := strings.Split(args[0], ",")
+			for i, request := range requests {
+				if i > 0 {
+					println("----------------------------------------")
+				}
+				RunRequest(cmd, request)
+			}
+		} else {
+			RunRequest(cmd, args[0])
+		}
 	},
 }
 
