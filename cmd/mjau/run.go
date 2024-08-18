@@ -1,6 +1,7 @@
 package mjau
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TylerBrock/colorjson"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -77,6 +79,15 @@ func AnsiColor(str string, r, g, b int) string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", r, g, b, str)
 }
 
+func PrettyPrintJson(jsonStr string) {
+	var obj map[string]interface{}
+	json.Unmarshal([]byte(jsonStr), &obj)
+	f := colorjson.NewFormatter()
+	f.Indent = 2
+	s, _ := f.Marshal(obj)
+	fmt.Println(string(s))
+}
+
 func RunRequest(cmd *cobra.Command, requestName string) {
 	config := loadConfig(cmd.Flag("config").Value.String())
 	errors := 0
@@ -121,11 +132,20 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 					resp.StatusCode,
 				),
 			)
+			json := false
 			for key, value := range resp.Header {
 				println(AnsiColor(key, 53, 177, 226) + ": " + strings.Join(value, ", "))
+				if key == "Content-Type" && strings.Contains(value[0], "application/json") {
+					json = true
+				}
 			}
 			println("")
-			println(string(body) + "\n")
+			if json {
+				PrettyPrintJson(string(body))
+				println("")
+			} else {
+				println(string(body) + "\n")
+			}
 
 			if len(request.Asserts) > 0 {
 				println("👀 Asserts:")
