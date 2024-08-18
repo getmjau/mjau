@@ -12,12 +12,14 @@ import (
 
 	"github.com/TylerBrock/colorjson"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Environments []Environment `yaml:"environments"`
-	Requests     []Request     `yaml:"requests"`
+	Environments    []Environment `yaml:"environments"`
+	StoredVariables []KeyValue
+	Requests        []Request `yaml:"requests"`
 }
 
 type Environment struct {
@@ -26,12 +28,18 @@ type Environment struct {
 }
 
 type Request struct {
-	Name    string     `yaml:"name"`
-	Method  string     `yaml:"method"`
-	URL     string     `yaml:"url"`
-	Headers []KeyValue `yaml:"headers"`
-	Body    string     `yaml:"body"`
-	Asserts []Assert   `yaml:"asserts"`
+	Name               string              `yaml:"name"`
+	Method             string              `yaml:"method"`
+	URL                string              `yaml:"url"`
+	Headers            []KeyValue          `yaml:"headers"`
+	Body               string              `yaml:"body"`
+	StoreJsonVariables []StoreJsonVariable `yaml:"store_json_variables"`
+	Asserts            []Assert            `yaml:"asserts"`
+}
+
+type StoreJsonVariable struct {
+	Path string `yaml:"path"`
+	Key  string `yaml:"key"`
 }
 
 type Assert struct {
@@ -63,9 +71,21 @@ func loadConfig(configfile string) Config {
 	return config
 }
 
-func (config Config) replaceVariables(request Request, environment Environment) Request {
+func (config Config) replaceVariables(
+	request Request,
+	environment Environment,
+	savedVariables []KeyValue,
+) Request {
 	// Replace variables in request with values from environment
 	for _, variable := range environment.Variables {
+		request.URL = strings.ReplaceAll(request.URL, "{"+variable.Key+"}", variable.Value)
+		request.Body = strings.ReplaceAll(request.Body, "{"+variable.Key+"}", variable.Value)
+		for _, header := range request.Headers {
+			header.Value = strings.ReplaceAll(header.Value, "{"+variable.Key+"}", variable.Value)
+		}
+	}
+	// Replace variables in request with saved replaceVariables
+	for _, variable := range savedVariables {
 		request.URL = strings.ReplaceAll(request.URL, "{"+variable.Key+"}", variable.Value)
 		request.Body = strings.ReplaceAll(request.Body, "{"+variable.Key+"}", variable.Value)
 		for _, header := range request.Headers {
@@ -79,6 +99,22 @@ func AnsiColor(str string, r, g, b int) string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", r, g, b, str)
 }
 
+func GetJsonValueFromPath(jsonStr string, path string) string {
+	return gjson.Get(jsonStr, path).String()
+}
+
+func GetJsonValues(jsonStr string, request Request, config *Config) {
+	for _, getJsonVariable := range request.StoreJsonVariables {
+		value := GetJsonValueFromPath(jsonStr, getJsonVariable.Path)
+		if value != "" {
+			config.StoredVariables = append(
+				config.StoredVariables,
+				KeyValue{Key: getJsonVariable.Key, Value: value},
+			)
+		}
+	}
+}
+
 func PrettyPrintJson(jsonStr string) {
 	var obj map[string]interface{}
 	json.Unmarshal([]byte(jsonStr), &obj)
@@ -88,15 +124,20 @@ func PrettyPrintJson(jsonStr string) {
 	fmt.Println(string(s))
 }
 
-func RunRequest(cmd *cobra.Command, requestName string) {
-	config := loadConfig(cmd.Flag("config").Value.String())
+func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 	errors := 0
 	found := false
 	println("😺 Running request " + requestName)
 	for _, request := range config.Requests {
 		if request.Name == requestName {
 			found = true
-			request = config.replaceVariables(request, config.Environments[0])
+			request = config.replaceVariables(
+				request,
+				config.Environments[0],
+				config.StoredVariables,
+			)
+
+			println("🚀 " + request.Method + " " + request.URL)
 
 			req, err := http.NewRequest(
 				request.Method,
@@ -142,9 +183,18 @@ func RunRequest(cmd *cobra.Command, requestName string) {
 			println("")
 			if json {
 				PrettyPrintJson(string(body))
+				GetJsonValues(string(body), request, config)
 				println("")
 			} else {
 				println(string(body) + "\n")
+			}
+
+			if len(config.StoredVariables) > 0 {
+				println("🔑 Stored variables:")
+				for _, variable := range config.StoredVariables {
+					println("  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value)
+				}
+				println("")
 			}
 
 			if len(request.Asserts) > 0 {
@@ -203,16 +253,17 @@ var runCmd = &cobra.Command{
 	Long:  `Run one or more requests separated by comma ,`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		config := loadConfig(cmd.Flag("config").Value.String())
 		if strings.Contains(args[0], ",") {
 			requests := strings.Split(args[0], ",")
 			for i, request := range requests {
 				if i > 0 {
 					println("----------------------------------------")
 				}
-				RunRequest(cmd, request)
+				RunRequest(cmd, request, &config)
 			}
 		} else {
-			RunRequest(cmd, args[0])
+			RunRequest(cmd, args[0], &config)
 		}
 	},
 }
@@ -227,7 +278,7 @@ var runAllCmd = &cobra.Command{
 			if i > 0 {
 				println("----------------------------------------")
 			}
-			RunRequest(cmd, request.Name)
+			RunRequest(cmd, request.Name, &config)
 		}
 
 	},
