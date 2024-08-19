@@ -4,7 +4,7 @@ import (
 	"github.com/fr3h4g/mjau/cmd/mjau"
 )
 
-var Version string
+var Version string = "development"
 
 func main() {
 	mjau.Version = Version

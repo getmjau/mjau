@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.PersistentFlags().
 		StringP("config", "c", "mjau.yaml", "config file")
+	rootCmd.PersistentFlags().BoolP("full-request", "f", false, "print full request")
 
 	rootCmd.PersistentFlags().StringP("env", "e", "default", "environment to use")
 

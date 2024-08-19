@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -150,9 +151,34 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				println(err)
 				os.Exit(1)
 			}
+			userAgentFound := false
 			for _, header := range request.Headers {
 				req.Header.Set(header.Key, header.Value)
-				//println(AnsiColor(header.Key, 53, 177, 226) + ": " + header.Value)
+				if cmd.Flag("full-request").Value.String() == "true" {
+					println(AnsiColor(header.Key, 53, 177, 226) + ": " + header.Value)
+				}
+				if header.Key == "User-Agent" {
+					userAgentFound = true
+				}
+			}
+			if !userAgentFound {
+				req.Header.Set(
+					"User-Agent",
+					"mjau/"+Version+" ("+runtime.GOOS+"; "+runtime.GOARCH+")",
+				)
+				if cmd.Flag("full-request").Value.String() == "true" {
+					println(
+						AnsiColor(
+							"User-Agent",
+							53,
+							177,
+							226,
+						) + ": mjau/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")",
+					)
+				}
+			}
+			if cmd.Flag("full-request").Value.String() == "true" {
+				println("\n" + request.Body)
 			}
 			start := time.Now()
 			resp, err := http.DefaultClient.Do(req)
