@@ -80,16 +80,18 @@ func (config Config) replaceVariables(
 	for _, variable := range environment.Variables {
 		request.URL = strings.ReplaceAll(request.URL, "{"+variable.Key+"}", variable.Value)
 		request.Body = strings.ReplaceAll(request.Body, "{"+variable.Key+"}", variable.Value)
-		for _, header := range request.Headers {
+		for i, header := range request.Headers {
 			header.Value = strings.ReplaceAll(header.Value, "{"+variable.Key+"}", variable.Value)
+			request.Headers[i] = header
 		}
 	}
 	// Replace variables in request with saved replaceVariables
 	for _, variable := range savedVariables {
 		request.URL = strings.ReplaceAll(request.URL, "{"+variable.Key+"}", variable.Value)
 		request.Body = strings.ReplaceAll(request.Body, "{"+variable.Key+"}", variable.Value)
-		for _, header := range request.Headers {
+		for i, header := range request.Headers {
 			header.Value = strings.ReplaceAll(header.Value, "{"+variable.Key+"}", variable.Value)
+			request.Headers[i] = header
 		}
 	}
 	return request
@@ -115,12 +117,12 @@ func GetJsonValues(jsonStr string, request Request, config *Config) {
 	}
 }
 
-func PrettyPrintJson(jsonStr string) {
-	var obj map[string]interface{}
-	json.Unmarshal([]byte(jsonStr), &obj)
+func PrettyPrintJson(body []byte) {
+	var objmap interface{}
+	json.Unmarshal(body, &objmap)
 	f := colorjson.NewFormatter()
 	f.Indent = 2
-	s, _ := f.Marshal(obj)
+	s, _ := f.Marshal(objmap)
 	fmt.Println(string(s))
 }
 
@@ -150,6 +152,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			}
 			for _, header := range request.Headers {
 				req.Header.Set(header.Key, header.Value)
+				//println(AnsiColor(header.Key, 53, 177, 226) + ": " + header.Value)
 			}
 			start := time.Now()
 			resp, err := http.DefaultClient.Do(req)
@@ -164,6 +167,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			if err != nil {
 				println(err)
 			}
+
 			body = []byte(strings.TrimSuffix(string(body), "\n"))
 			println(
 				AnsiColor("HTTP/1.1 ", 53, 42, 226)+
@@ -182,7 +186,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			}
 			println("")
 			if json {
-				PrettyPrintJson(string(body))
+				PrettyPrintJson(body)
 				GetJsonValues(string(body), request, config)
 				println("")
 			} else {
