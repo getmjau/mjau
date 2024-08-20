@@ -15,6 +15,11 @@ requests:
         description: "add variable test"
         variable: test
         value: "test\n{{environment.host}}"
+      - command: add_json_variable
+        description: "add origin from response.body to test2"
+        variable: test2
+        from_variable: response.body
+        path: origin
 
   - name: healthz
     url: http://{{environment.host}}/get

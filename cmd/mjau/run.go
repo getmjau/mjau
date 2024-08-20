@@ -40,10 +40,12 @@ type Request struct {
 }
 
 type Command struct {
-	Description string `yaml:"description"`
-	Command     string `yaml:"command"`
-	Variable    string `yaml:"variable"`
-	Value       string `yaml:"value"`
+	Description  string `yaml:"description"`
+	Command      string `yaml:"command"`
+	FromVariable string `yaml:"from_variable"`
+	Variable     string `yaml:"variable"`
+	Path         string `yaml:"path"`
+	Value        string `yaml:"value"`
 }
 
 type StoreJsonVariable struct {
@@ -358,7 +360,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			if len(request.Commands) > 0 {
 				fmt.Println("🔧 Commands:")
 				for _, command := range request.Commands {
-					fmt.Println("  🪄 " + command.Description)
+					fmt.Println("  ✨ " + command.Description)
 					if command.Command == "echo" {
 						fmt.Println("       " + config.InsertVariables(command.Value))
 					}
@@ -367,6 +369,15 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 							command.Variable,
 							config.InsertVariables(command.Value),
 						)
+					}
+					if command.Command == "add_json_variable" {
+						value := GetJsonValueFromPath(
+							config.GetVariable(command.FromVariable),
+							command.Path,
+						)
+						if value != "" {
+							config.StoreVariable(command.Variable, value)
+						}
 					}
 				}
 				fmt.Println("")
@@ -384,7 +395,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 					) {
 						errors++
 						fmt.Printf(
-							"  ❌ %s does not match. Expected: %s %s %s\n",
+							"  ❌ %s failed. Expected: %s %s %s\n",
 							assert.Description,
 							config.GetVariable(assert.Variable),
 							assert.Comparison,
@@ -392,7 +403,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 						)
 					} else {
 						fmt.Printf(
-							"  ✅ %s matches\n",
+							"  ✅ %s\n",
 							assert.Description,
 						)
 					}
