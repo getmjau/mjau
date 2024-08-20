@@ -1,41 +1,46 @@
 environments:
-  - name: local
+  - name: default
     variables:
       - key: host
-        value: localhost
-      - key: port
-        value: 8000
+        value: httpbin.org
 requests:
-  - name: healthz
-    url: http://{host}:{port}/healthz
+  - name: test
+    url: http://{{environment.host}}/get
     method: GET
     headers:
       - key: Content-Type
         value: application/json
-    body: '{"key": "value"}'
-    store_json_variables:
-      - key: status
-        path: status
+    commands:
+      - command: add_variable
+        description: "add test"
+        variable: test
+        value: "test"
+
+  - name: healthz
+    url: http://{{environment.host}}/get
+    method: GET
+    headers:
+      - key: Content-Type
+        value: application/json
+    commands:
+      - command: echo
+        description: "print response code"
+        value: "response code: {{response.status_code}}"
     asserts:
       - description: "status code is 200"
-        key: status_code
+        variable: response.status_code
+        comparison: "=="
         value: 200
-      - description: "body is correct"
-        key: body
-        value: '{"status": "ok"}'
-  - name: not_found
-    url: http://{host}:{port}/404{status}
-    method: GET
-    headers:
-      - key: Content-Type
+      - description: "status code is less than 400"
+        variable: response.status_code
+        comparison: "<="
+        value: 400
+      - description: "content type is application/json"
+        variable: response.headers.Content-Type
+        comparison: "=="
         value: application/json
-    asserts:
-      - description: "status code is 404"
-        key: status_code
-        value: 404
-      - description: "body is correct"
-        key: body
-        value: '404 page not found'
-      
-
-
+      - description: "body contains origin"
+        variable: response.body
+        comparison: contains
+        value: "origin"
+ 
