@@ -4,6 +4,7 @@ go 1.22.1
 
 require (
 	github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.8.1
 	github.com/tidwall/gjson v1.17.3
 	gopkg.in/yaml.v2 v2.4.0

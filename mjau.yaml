@@ -14,7 +14,7 @@ requests:
       - command: add_variable
         description: "add variable test"
         variable: test
-        value: "test\n{{environment.host}}"
+        value: "test:\n{{environment.host}}\n{{$timestamp()}}\n{{$random(100)}}\n{{$uuid()}}"
       - command: add_json_variable
         description: "add origin from response.body to test2"
         variable: test2

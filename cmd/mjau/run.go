@@ -6,12 +6,16 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	"math/rand/v2"
+
 	"github.com/TylerBrock/colorjson"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -144,10 +148,44 @@ func (config *Config) GetVariable(key string) string {
 	return ""
 }
 
+func RunInlineCommand(value string) string {
+	if strings.Contains(value, "{{$") {
+		var re = regexp.MustCompile(`{{\$([a-z][a-z0-9_]*)\(([a-z0-9"',]*)\)}}`)
+		for i, match := range re.FindAllString(value, -1) {
+			fmt.Println(match, "found at index", i)
+			submatch := re.FindStringSubmatch(match)
+			command := submatch[1]
+			args := strings.Split(submatch[2], ",")
+
+			if command == "uuid" {
+				value = strings.ReplaceAll(value, match, uuid.New().String())
+			}
+			if command == "timestamp" {
+				value = strings.ReplaceAll(value, match, time.Now().Format(time.RFC3339))
+			}
+			if command == "random" {
+				int_arg0, err := strconv.Atoi(args[0])
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				value = strings.ReplaceAll(
+					value,
+					match,
+					strconv.Itoa(rand.IntN(int_arg0)),
+				)
+			}
+		}
+
+	}
+	return value
+}
+
 func (config *Config) InsertVariables(str string) string {
 	for _, variable := range config.StoredVariables {
 		str = strings.ReplaceAll(str, "{{"+variable.Key+"}}", variable.Value)
 	}
+	str = RunInlineCommand(str)
 	return str
 }
 
