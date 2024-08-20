@@ -82,7 +82,7 @@ func loadConfig(configfile string) Config {
 	return config
 }
 
-func (config *Config) ClearRequestResponeVariables() {
+func (config *Config) ClearRequestResponseVariables() {
 	for _, request := range config.StoredVariables {
 		if strings.HasPrefix(request.Key, "request.") ||
 			strings.HasPrefix(request.Key, "response.") {
@@ -214,7 +214,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 	found := false
 	fmt.Println("😺 Running request " + requestName)
 	config.LoadEnvironment(cmd.Flag("env").Value.String())
-	config.ClearRequestResponeVariables()
+	config.ClearRequestResponseVariables()
 	for _, request := range config.Requests {
 		if request.Name == requestName {
 			found = true
