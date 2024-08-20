@@ -12,9 +12,9 @@ requests:
         value: application/json
     commands:
       - command: add_variable
-        description: "add test"
+        description: "add variable test"
         variable: test
-        value: "test"
+        value: "test\n{{environment.host}}"
 
   - name: healthz
     url: http://{{environment.host}}/get

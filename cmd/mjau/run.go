@@ -209,6 +209,43 @@ func (config *Config) RemoveStoredVariable(key string) {
 	}
 }
 
+func (config *Config) ShowStoredVariables() {
+	if len(config.StoredVariables) > 0 {
+		fmt.Println("🔑 Stored variables:")
+		for _, variable := range config.StoredVariables {
+			if strings.HasPrefix(variable.Key, "environment.") {
+				fmt.Println(
+					"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
+				)
+			}
+		}
+		for _, variable := range config.StoredVariables {
+			if strings.HasPrefix(variable.Key, "request.") {
+				fmt.Println(
+					"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
+				)
+			}
+		}
+		for _, variable := range config.StoredVariables {
+			if strings.HasPrefix(variable.Key, "response.") {
+				fmt.Println(
+					"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
+				)
+			}
+		}
+		for _, variable := range config.StoredVariables {
+			if !strings.HasPrefix(variable.Key, "response.") &&
+				!strings.HasPrefix(variable.Key, "request.") &&
+				!strings.HasPrefix(variable.Key, "environment.") {
+				fmt.Println(
+					"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
+				)
+			}
+		}
+		fmt.Println("")
+	}
+}
+
 func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 	errors := 0
 	found := false
@@ -320,101 +357,48 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 
 			if len(request.Commands) > 0 {
 				fmt.Println("🔧 Commands:")
-			}
-			for _, command := range request.Commands {
-				if command.Command == "echo" {
-					fmt.Println("  " + config.InsertVariables(command.Value))
-				}
-				if command.Command == "add_variable" {
-					config.StoreVariable(command.Variable, command.Value)
-				}
-			}
-
-			if len(config.StoredVariables) > 0 {
-				fmt.Println("🔑 Stored variables:")
-				for _, variable := range config.StoredVariables {
-					if strings.HasPrefix(variable.Key, "environment.") {
-						fmt.Println(
-							"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
+				for _, command := range request.Commands {
+					fmt.Println("  🪄 " + command.Description)
+					if command.Command == "echo" {
+						fmt.Println("       " + config.InsertVariables(command.Value))
+					}
+					if command.Command == "add_variable" {
+						config.StoreVariable(
+							command.Variable,
+							config.InsertVariables(command.Value),
 						)
 					}
 				}
-				for _, variable := range config.StoredVariables {
-					if strings.HasPrefix(variable.Key, "request.") {
-						fmt.Println(
-							"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
-						)
-					}
-				}
-				for _, variable := range config.StoredVariables {
-					if strings.HasPrefix(variable.Key, "response.") {
-						fmt.Println(
-							"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
-						)
-					}
-				}
-				for _, variable := range config.StoredVariables {
-					if !strings.HasPrefix(variable.Key, "response.") &&
-						!strings.HasPrefix(variable.Key, "request.") &&
-						!strings.HasPrefix(variable.Key, "environment.") {
-						fmt.Println(
-							"  " + AnsiColor(variable.Key, 53, 177, 226) + ": " + variable.Value,
-						)
-					}
-				}
-
 				fmt.Println("")
 			}
 
+			config.ShowStoredVariables()
+
 			if len(request.Asserts) > 0 {
 				fmt.Println("👀 Asserts:")
-			}
-			for _, assert := range request.Asserts {
-				if !Compare(config.GetVariable(assert.Variable), assert.Value, assert.Comparison) {
-					//if assert.Value != config.GetVariable(assert.Variable) {
-					errors++
-					fmt.Printf(
-						"  ❌ %s does not match. Expected: %s %s %s\n",
-						assert.Description,
+				for _, assert := range request.Asserts {
+					if !Compare(
 						config.GetVariable(assert.Variable),
-						assert.Comparison,
 						assert.Value,
-					)
-				} else {
-					fmt.Printf(
-						"  ✅ %s matches\n",
-						assert.Description,
-					)
+						assert.Comparison,
+					) {
+						errors++
+						fmt.Printf(
+							"  ❌ %s does not match. Expected: %s %s %s\n",
+							assert.Description,
+							config.GetVariable(assert.Variable),
+							assert.Comparison,
+							assert.Value,
+						)
+					} else {
+						fmt.Printf(
+							"  ✅ %s matches\n",
+							assert.Description,
+						)
+					}
 				}
+				fmt.Println("")
 			}
-			// for _, assert := range request.Asserts {
-			// 	fmt.Println("" + AnsiColor(assert.Description, 53, 177, 226))
-			// 	if assert.Key == "status_code" {
-			// 		if strconv.Itoa(resp.StatusCode) != assert.Value {
-			// 			errors++
-			// 			fmt.Printf(
-			// 				"  ❌ Status code does not match. Expected: %s, got: %d\n",
-			// 				assert.Value,
-			// 				resp.StatusCode,
-			// 			)
-			// 		} else {
-			// 			fmt.Println("  ✅ Status code matches")
-			// 		}
-			// 	}
-			// 	if assert.Key == "body" {
-			// 		if string(body) != assert.Value {
-			// 			errors++
-			// 			fmt.Printf(
-			// 				"  ❌ Body does not match. Expected: '%s', got: '%s'\n",
-			// 				assert.Value,
-			// 				string(body),
-			// 			)
-			// 		} else {
-			// 			fmt.Println("  ✅ Body matches")
-			// 		}
-			// 	}
-			// }
-
 		}
 	}
 	if !found {
