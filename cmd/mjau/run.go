@@ -151,8 +151,7 @@ func (config *Config) GetVariable(key string) string {
 func RunInlineCommand(value string) string {
 	if strings.Contains(value, "{{$") {
 		var re = regexp.MustCompile(`{{\$([a-z][a-z0-9_]*)\(([a-z0-9"',]*)\)}}`)
-		for i, match := range re.FindAllString(value, -1) {
-			fmt.Println(match, "found at index", i)
+		for _, match := range re.FindAllString(value, -1) {
 			submatch := re.FindStringSubmatch(match)
 			command := submatch[1]
 			args := strings.Split(submatch[2], ",")
