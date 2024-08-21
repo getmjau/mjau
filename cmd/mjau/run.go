@@ -320,7 +320,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			userAgentFound := false
 			for _, header := range request.Headers {
 				req.Header.Set(header.Key, header.Value)
-				if cmd.Flag("full-request").Value.String() == "true" {
+				if cmd.Flag("full-request").Value.String() == "true" ||
+					cmd.Flag("request-headers").Value.String() == "true" {
 					fmt.Println(AnsiColor(header.Key, 53, 177, 226) + ": " + header.Value)
 				}
 				if header.Key == "User-Agent" {
@@ -332,7 +333,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 					"User-Agent",
 					"mjau/"+Version+" ("+runtime.GOOS+"; "+runtime.GOARCH+")",
 				)
-				if cmd.Flag("full-request").Value.String() == "true" {
+				if cmd.Flag("full-request").Value.String() == "true" ||
+					cmd.Flag("request-headers").Value.String() == "true" {
 					fmt.Println(
 						AnsiColor(
 							"User-Agent",
@@ -347,7 +349,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				config.StoreVariable("request.headers."+header.Key, header.Value)
 			}
 
-			if cmd.Flag("full-request").Value.String() == "true" {
+			if cmd.Flag("full-request").Value.String() == "true" ||
+				cmd.Flag("request-body").Value.String() == "true" {
 				fmt.Println("\n" + request.Body)
 			}
 			start := time.Now()
@@ -379,13 +382,17 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			)
 			json := false
 			for key, value := range resp.Header {
-				fmt.Println(AnsiColor(key, 53, 177, 226) + ": " + strings.Join(value, ", "))
+				if cmd.Flag("headers").Value.String() == "true" {
+					fmt.Println(AnsiColor(key, 53, 177, 226) + ": " + strings.Join(value, ", "))
+				}
 				if key == "Content-Type" && strings.Contains(value[0], "application/json") {
 					json = true
 				}
 				config.StoreVariable("response.headers."+key, strings.Join(value, ", "))
 			}
-			fmt.Println("")
+			if cmd.Flag("headers").Value.String() == "true" {
+				fmt.Println("")
+			}
 			if json {
 				PrettyPrintJson(body)
 				GetJsonValues(string(body), request, config)
@@ -394,58 +401,64 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				fmt.Println(string(body) + "\n")
 			}
 
-			if len(request.Commands) > 0 {
-				fmt.Println("🔧 Commands:")
-				for _, command := range request.Commands {
-					fmt.Println("  ✨ " + command.Description)
-					if command.Command == "echo" {
-						fmt.Println("       " + config.InsertVariables(command.Value))
-					}
-					if command.Command == "add_variable" {
-						config.StoreVariable(
-							command.Variable,
-							config.InsertVariables(command.Value),
-						)
-					}
-					if command.Command == "add_json_variable" {
-						value := GetJsonValueFromPath(
-							config.GetVariable(command.FromVariable),
-							command.Path,
-						)
-						if value != "" {
-							config.StoreVariable(command.Variable, value)
+			if cmd.Flag("show-commands").Value.String() == "true" {
+				if len(request.Commands) > 0 {
+					fmt.Println("🔧 Commands:")
+					for _, command := range request.Commands {
+						fmt.Println("  ✨ " + command.Description)
+						if command.Command == "echo" {
+							fmt.Println("       " + config.InsertVariables(command.Value))
+						}
+						if command.Command == "add_variable" {
+							config.StoreVariable(
+								command.Variable,
+								config.InsertVariables(command.Value),
+							)
+						}
+						if command.Command == "add_json_variable" {
+							value := GetJsonValueFromPath(
+								config.GetVariable(command.FromVariable),
+								command.Path,
+							)
+							if value != "" {
+								config.StoreVariable(command.Variable, value)
+							}
 						}
 					}
+					fmt.Println("")
 				}
-				fmt.Println("")
 			}
 
-			config.ShowStoredVariables()
+			if cmd.Flag("show-variables").Value.String() == "true" {
+				config.ShowStoredVariables()
+			}
 
-			if len(request.Asserts) > 0 {
-				fmt.Println("👀 Asserts:")
-				for _, assert := range request.Asserts {
-					if !Compare(
-						config.GetVariable(assert.Variable),
-						assert.Value,
-						assert.Comparison,
-					) {
-						errors++
-						fmt.Printf(
-							"  ❌ %s failed. Expected: %s %s %s\n",
-							assert.Description,
+			if cmd.Flag("show-asserts").Value.String() == "true" {
+				if len(request.Asserts) > 0 {
+					fmt.Println("👀 Asserts:")
+					for _, assert := range request.Asserts {
+						if !Compare(
 							config.GetVariable(assert.Variable),
-							assert.Comparison,
 							assert.Value,
-						)
-					} else {
-						fmt.Printf(
-							"  ✅ %s\n",
-							assert.Description,
-						)
+							assert.Comparison,
+						) {
+							errors++
+							fmt.Printf(
+								"  ❌ %s failed. Expected: %s %s %s\n",
+								assert.Description,
+								config.GetVariable(assert.Variable),
+								assert.Comparison,
+								assert.Value,
+							)
+						} else {
+							fmt.Printf(
+								"  ✅ %s\n",
+								assert.Description,
+							)
+						}
 					}
+					fmt.Println("")
 				}
-				fmt.Println("")
 			}
 		}
 	}
