@@ -15,5 +15,5 @@ can be run on any platform.
 To install mjau, run the following command:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/fr3h4g/mjau/main/install.sh | bash
+curl -sL https://getmjau.dev/install.sh | bash
 ```
