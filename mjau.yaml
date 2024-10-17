@@ -3,8 +3,15 @@ environments:
     variables:
       - key: host
         value: httpbin.org
+      - key: uuid
+        value: "{{$uuid()}}"
 requests:
   - name: test
+    pre_commands:
+      - command: add_variable
+        description: "add variable test"
+        variable: test99
+        value: "test99"
     url: http://{{environment.host}}/get
     method: GET
     headers:

@@ -39,6 +39,7 @@ type Request struct {
 	Headers            []KeyValue          `yaml:"headers"`
 	Body               string              `yaml:"body"`
 	StoreJsonVariables []StoreJsonVariable `yaml:"store_json_variables"`
+	PreCommands        []Command           `yaml:"pre_commands"`
 	Commands           []Command           `yaml:"commands"`
 	Asserts            []Assert            `yaml:"asserts"`
 }
@@ -102,28 +103,13 @@ func (config *Config) LoadEnvironment(name string) {
 		if environment.Name == name {
 			config.StoreVariable("environment.name", environment.Name)
 			for _, variable := range environment.Variables {
-				config.StoreVariable("environment."+variable.Key, variable.Value)
+				config.StoreVariable(
+					"environment."+variable.Key,
+					config.InsertVariables(variable.Value),
+				)
 			}
 		}
 	}
-}
-
-func (config *Config) replaceVariables(
-	request Request,
-	environment Environment,
-) Request {
-	// Replace variables in request with values from environment
-	config.StoreVariable("env.name", environment.Name)
-	for _, variable := range environment.Variables {
-		request.URL = strings.ReplaceAll(request.URL, "{{"+variable.Key+"}}", variable.Value)
-		request.Body = strings.ReplaceAll(request.Body, "{{"+variable.Key+"}}", variable.Value)
-		for i, header := range request.Headers {
-			header.Value = strings.ReplaceAll(header.Value, "{{"+variable.Key+"}}", variable.Value)
-			request.Headers[i] = header
-		}
-		config.StoreVariable("env."+variable.Key, variable.Value)
-	}
-	return request
 }
 
 func (config *Config) StoreVariable(key, value string) {
@@ -293,6 +279,9 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 	config.ClearRequestResponseVariables()
 	for _, request := range config.Requests {
 		if request.Name == requestName {
+			if len(request.PreCommands) > 0 {
+				RunCommands(request.PreCommands, config, cmd)
+			}
 			found = true
 			request.URL = config.InsertVariables(request.URL)
 			request.Body = config.InsertVariables(request.Body)
@@ -402,37 +391,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			}
 
 			if len(request.Commands) > 0 {
-				if cmd.Flag("show-commands").Value.String() == "true" {
-					fmt.Println("🔧 Commands:")
-				}
-				for _, command := range request.Commands {
-					if cmd.Flag("show-commands").Value.String() == "true" {
-						fmt.Println("  ✨ " + command.Description)
-					}
-					if command.Command == "echo" {
-						if cmd.Flag("show-commands").Value.String() == "true" {
-							fmt.Println("       " + config.InsertVariables(command.Value))
-						}
-					}
-					if command.Command == "add_variable" {
-						config.StoreVariable(
-							command.Variable,
-							config.InsertVariables(command.Value),
-						)
-					}
-					if command.Command == "add_json_variable" {
-						value := GetJsonValueFromPath(
-							config.GetVariable(command.FromVariable),
-							command.Path,
-						)
-						if value != "" {
-							config.StoreVariable(command.Variable, value)
-						}
-					}
-				}
-				if cmd.Flag("show-commands").Value.String() == "true" {
-					fmt.Println("")
-				}
+				RunCommands(request.Commands, config, cmd)
 			}
 
 			if cmd.Flag("show-variables").Value.String() == "true" {
@@ -477,6 +436,40 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 		os.Exit(1)
 	} else {
 		fmt.Println("😻 Request ran successfully")
+	}
+}
+
+func RunCommands(commands []Command, config *Config, cmd *cobra.Command) {
+	if cmd.Flag("show-commands").Value.String() == "true" {
+		fmt.Println("🔧 Commands:")
+	}
+	for _, command := range commands {
+		if cmd.Flag("show-commands").Value.String() == "true" {
+			fmt.Println("  ✨ " + command.Description)
+		}
+		if command.Command == "echo" {
+			if cmd.Flag("show-commands").Value.String() == "true" {
+				fmt.Println("       " + config.InsertVariables(command.Value))
+			}
+		}
+		if command.Command == "add_variable" {
+			config.StoreVariable(
+				command.Variable,
+				config.InsertVariables(command.Value),
+			)
+		}
+		if command.Command == "add_json_variable" {
+			value := GetJsonValueFromPath(
+				config.GetVariable(command.FromVariable),
+				command.Path,
+			)
+			if value != "" {
+				config.StoreVariable(command.Variable, value)
+			}
+		}
+	}
+	if cmd.Flag("show-commands").Value.String() == "true" {
+		fmt.Println("")
 	}
 }
 
