@@ -401,30 +401,36 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				fmt.Println(string(body) + "\n")
 			}
 
-			if cmd.Flag("show-commands").Value.String() == "true" {
-				if len(request.Commands) > 0 {
+			if len(request.Commands) > 0 {
+				if cmd.Flag("show-commands").Value.String() == "true" {
 					fmt.Println("🔧 Commands:")
-					for _, command := range request.Commands {
+				}
+				for _, command := range request.Commands {
+					if cmd.Flag("show-commands").Value.String() == "true" {
 						fmt.Println("  ✨ " + command.Description)
-						if command.Command == "echo" {
+					}
+					if command.Command == "echo" {
+						if cmd.Flag("show-commands").Value.String() == "true" {
 							fmt.Println("       " + config.InsertVariables(command.Value))
 						}
-						if command.Command == "add_variable" {
-							config.StoreVariable(
-								command.Variable,
-								config.InsertVariables(command.Value),
-							)
-						}
-						if command.Command == "add_json_variable" {
-							value := GetJsonValueFromPath(
-								config.GetVariable(command.FromVariable),
-								command.Path,
-							)
-							if value != "" {
-								config.StoreVariable(command.Variable, value)
-							}
+					}
+					if command.Command == "add_variable" {
+						config.StoreVariable(
+							command.Variable,
+							config.InsertVariables(command.Value),
+						)
+					}
+					if command.Command == "add_json_variable" {
+						value := GetJsonValueFromPath(
+							config.GetVariable(command.FromVariable),
+							command.Path,
+						)
+						if value != "" {
+							config.StoreVariable(command.Variable, value)
 						}
 					}
+				}
+				if cmd.Flag("show-commands").Value.String() == "true" {
 					fmt.Println("")
 				}
 			}
