@@ -296,8 +296,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			found = true
 			request.URL = config.InsertVariables(request.URL)
 			request.Body = config.InsertVariables(request.Body)
-			for _, header := range request.Headers {
-				header.Value = config.InsertVariables(header.Value)
+			for i, header := range request.Headers {
+				request.Headers[i].Value = config.InsertVariables(header.Value)
 			}
 
 			fmt.Println("🚀 " + request.Method + " " + request.URL)
