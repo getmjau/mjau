@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/fr3h4g/mjau/cmd/mjau"
+	"github.com/getmjau/mjau/cmd/mjau"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

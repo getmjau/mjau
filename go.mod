@@ -1,4 +1,4 @@
-module github.com/fr3h4g/mjau
+module github.com/getmjau/mjau
 
 go 1.22.1
 
