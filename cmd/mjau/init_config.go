@@ -1,4 +1,6 @@
-# This is a sample mjau configuration file
+package mjau
+
+var InitSampleConfig = `# This is a sample mjau configuration file
 # You can use this file as a template for your own configuration
 environments:
   - name: default
@@ -57,3 +59,4 @@ requests:
         variable: response.body
         comparison: contains
         value: "origin"
+`

@@ -38,6 +38,8 @@ func Execute() {
 
 	rootCmd.PersistentFlags().BoolP("show-asserts", "A", false, "print asserts")
 
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output, prints everything")
+
 	rootCmd.PersistentFlags().StringP("env", "e", "default", "environment to use")
 
 	if err := rootCmd.Execute(); err != nil {

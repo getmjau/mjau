@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -343,7 +344,9 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			for _, header := range request.Headers {
 				req.Header.Set(header.Key, header.Value)
 				if cmd.Flag("full-request").Value.String() == "true" ||
-					cmd.Flag("request-headers").Value.String() == "true" {
+					cmd.Flag(
+						"request-headers",
+					).Value.String() == "true" || cmd.Flag("verbose").Value.String() == "true" {
 					fmt.Println(AnsiColor(header.Key, 53, 177, 226) + ": " + header.Value)
 				}
 				if header.Key == "User-Agent" {
@@ -356,7 +359,9 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 					"mjau/"+Version+" ("+runtime.GOOS+"; "+runtime.GOARCH+")",
 				)
 				if cmd.Flag("full-request").Value.String() == "true" ||
-					cmd.Flag("request-headers").Value.String() == "true" {
+					cmd.Flag(
+						"request-headers",
+					).Value.String() == "true" || cmd.Flag("verbose").Value.String() == "true" {
 					fmt.Println(
 						AnsiColor(
 							"User-Agent",
@@ -372,7 +377,9 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			}
 
 			if cmd.Flag("full-request").Value.String() == "true" ||
-				cmd.Flag("request-body").Value.String() == "true" {
+				cmd.Flag(
+					"request-body",
+				).Value.String() == "true" || cmd.Flag("verbose").Value.String() == "true" {
 				fmt.Println("\n" + request.Body)
 			}
 			start := time.Now()
@@ -404,7 +411,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			)
 			json := false
 			for key, value := range resp.Header {
-				if cmd.Flag("headers").Value.String() == "true" {
+				if cmd.Flag("headers").Value.String() == "true" ||
+					cmd.Flag("verbose").Value.String() == "true" {
 					fmt.Println(AnsiColor(key, 53, 177, 226) + ": " + strings.Join(value, ", "))
 				}
 				if key == "Content-Type" && strings.Contains(value[0], "application/json") {
@@ -412,7 +420,8 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				}
 				config.StoreVariable("response.headers."+key, strings.Join(value, ", "))
 			}
-			if cmd.Flag("headers").Value.String() == "true" {
+			if cmd.Flag("headers").Value.String() == "true" ||
+				cmd.Flag("verbose").Value.String() == "true" {
 				fmt.Println("")
 			}
 			if json {
@@ -427,11 +436,13 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				RunCommands(request.Commands, config, cmd)
 			}
 
-			if cmd.Flag("show-variables").Value.String() == "true" {
+			if cmd.Flag("show-variables").Value.String() == "true" ||
+				cmd.Flag("verbose").Value.String() == "true" {
 				config.ShowStoredVariables()
 			}
 
-			if cmd.Flag("show-asserts").Value.String() == "true" {
+			if cmd.Flag("show-asserts").Value.String() == "true" ||
+				cmd.Flag("verbose").Value.String() == "true" {
 				if len(request.Asserts) > 0 {
 					fmt.Println("👀 Asserts:")
 					for _, assert := range request.Asserts {
@@ -473,15 +484,18 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 }
 
 func RunCommands(commands []Command, config *Config, cmd *cobra.Command) {
-	if cmd.Flag("show-commands").Value.String() == "true" {
+	if cmd.Flag("show-commands").Value.String() == "true" ||
+		cmd.Flag("verbose").Value.String() == "true" {
 		fmt.Println("🔧 Commands:")
 	}
 	for _, command := range commands {
-		if cmd.Flag("show-commands").Value.String() == "true" {
+		if cmd.Flag("show-commands").Value.String() == "true" ||
+			cmd.Flag("verbose").Value.String() == "true" {
 			fmt.Println("  ✨ " + command.Description)
 		}
 		if command.Command == "echo" {
-			if cmd.Flag("show-commands").Value.String() == "true" {
+			if cmd.Flag("show-commands").Value.String() == "true" ||
+				cmd.Flag("verbose").Value.String() == "true" {
 				fmt.Println("       " + config.InsertVariables(command.Value))
 			}
 		}
@@ -501,7 +515,8 @@ func RunCommands(commands []Command, config *Config, cmd *cobra.Command) {
 			}
 		}
 	}
-	if cmd.Flag("show-commands").Value.String() == "true" {
+	if cmd.Flag("show-commands").Value.String() == "true" ||
+		cmd.Flag("verbose").Value.String() == "true" {
 		fmt.Println("")
 	}
 }
@@ -509,11 +524,12 @@ func RunCommands(commands []Command, config *Config, cmd *cobra.Command) {
 func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(runAllCmd)
+	rootCmd.AddCommand(runInitCmd)
 }
 
 var runCmd = &cobra.Command{
 	Use:   "run <request(s)>",
-	Short: "Run one or more requests",
+	Short: "Run one or more requests separated by comma ,",
 	Long:  `Run one or more requests separated by comma ,`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -543,6 +559,27 @@ var runAllCmd = &cobra.Command{
 				fmt.Println("----------------------------------------")
 			}
 			RunRequest(cmd, request.Name, &config)
+		}
+
+	},
+}
+
+var runInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Initialize Mjau, create a sample config file",
+	Long:  `Initialize Mjau, create a sample config file`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Initializing Mjau, creating a sample config file")
+		configFile := cmd.Flag("config").Value.String()
+
+		if _, err := os.Stat(configFile); errors.Is(err, os.ErrNotExist) {
+			os.WriteFile(
+				configFile,
+				[]byte(InitSampleConfig),
+				0644,
+			)
+		} else {
+			fmt.Println("Config file already exists")
 		}
 
 	},
