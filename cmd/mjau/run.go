@@ -1,9 +1,12 @@
 package mjau
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -42,6 +45,9 @@ type Request struct {
 	PreCommands        []Command           `yaml:"pre_commands"`
 	Commands           []Command           `yaml:"commands"`
 	Asserts            []Assert            `yaml:"asserts"`
+	Cert               string              `yaml:"cert"`
+	Key                string              `yaml:"key"`
+	CaCert             string              `yaml:"ca_cert"`
 }
 
 type Command struct {
@@ -296,6 +302,33 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 			config.StoreVariable("request.url", request.URL)
 			config.StoreVariable("request.body", request.Body)
 
+			client := &http.Client{}
+
+			if request.Cert != "" && request.Key != "" {
+				cert, err := tls.LoadX509KeyPair(request.Cert, request.Key)
+				if err != nil {
+					log.Fatal(err)
+				}
+				client = &http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							Certificates: []tls.Certificate{cert},
+						},
+					},
+				}
+
+				if request.CaCert != "" {
+					caCertPool := x509.NewCertPool()
+					caCert, err := os.ReadFile(request.CaCert)
+					if err != nil {
+						log.Fatal(err)
+					}
+					caCertPool.AppendCertsFromPEM(caCert)
+
+					client.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
+				}
+			}
+
 			req, err := http.NewRequest(
 				request.Method,
 				request.URL,
@@ -343,7 +376,7 @@ func RunRequest(cmd *cobra.Command, requestName string, config *Config) {
 				fmt.Println("\n" + request.Body)
 			}
 			start := time.Now()
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := client.Do(req)
 			elapsed := time.Since(start)
 			if err != nil {
 				fmt.Println(err)
