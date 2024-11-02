@@ -15,7 +15,9 @@ var rootCmd = &cobra.Command{
 	Long:  `Mjau is a api testing tool that uses yaml files to define environments and requests.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
-		cmd.Help()
+		if cmd.Help() != nil {
+			os.Exit(0)
+		}
 	},
 }
 

@@ -203,7 +203,10 @@ func GetJsonValues(jsonStr string, request Request, config *Config) {
 
 func PrettyPrintJson(body []byte) {
 	var objmap interface{}
-	json.Unmarshal(body, &objmap)
+	if json.Unmarshal(body, &objmap) != nil {
+		fmt.Println(string(body))
+		return
+	}
 	f := colorjson.NewFormatter()
 	f.Indent = 2
 	s, _ := f.Marshal(objmap)
@@ -573,11 +576,14 @@ var runInitCmd = &cobra.Command{
 		configFile := cmd.Flag("config").Value.String()
 
 		if _, err := os.Stat(configFile); errors.Is(err, os.ErrNotExist) {
-			os.WriteFile(
+			if os.WriteFile(
 				configFile,
 				[]byte(InitSampleConfig),
 				0644,
-			)
+			) != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		} else {
 			fmt.Println("Config file already exists")
 		}
