@@ -6,3 +6,5 @@
 *.key
 *.pem
 *.csr
+# Added by goreleaser init:
+dist/
