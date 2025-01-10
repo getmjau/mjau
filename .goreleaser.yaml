@@ -24,7 +24,7 @@ universal_binaries:
 
 brews:
   - name: mjau
-    homepage: https://getmjau.com
+    homepage: https://getmjau.dev
     repository:
       owner: getmjau
       name: homebrew-tap
