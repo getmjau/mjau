@@ -1,16 +1,69 @@
 # mjau Documentation
 
-<h2 align="center">
+<p align="center">
     <img height="150" alt="mjau" src="https://github.com/fr3h4g/mjau/blob/main/other/mjau_logo.svg" />
     <br>
     mjau - API Testing That's as Simple as a Meow
-</h2>
+</p>
+
+<p align="center">
+    <a href="https://github.com/getmjau/mjau/actions/workflows/ci.yaml">
+        <img src="https://github.com/getmjau/mjau/actions/workflows/ci.yaml/badge.svg" alt="CI">
+    </a>
+    <a href="https://goreportcard.com/report/github.com/getmjau/mjau">
+        <img src="https://goreportcard.com/badge/github.com/getmjau/mjau" alt="Go Report Card">
+    </a>
+    <a href="https://github.com/getmjau/mjau/releases">
+        <img src="https://img.shields.io/github/v/release/getmjau/mjau" alt="Release">
+    </a>
+    <a href="https://github.com/getmjau/mjau/blob/main/LICENSE">
+        <img src="https://img.shields.io/github/license/getmjau/mjau" alt="License">
+    </a>
+</p>
+
+## Table of Contents
+
+- [What is mjau?](#what-is-mjau)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Commands](#commands)
+- [Flags](#flags)
+- [mjau.yaml File Structure](#mjauyaml-file-structure)
+- [Commands in mjau.yaml](#commands-in-mjauyaml)
+- [Standard Variables](#standard-variables)
+- [Assertions](#assertions)
+- [Built-in Functions](#built-in-functions)
+- [Example mjau.yaml](#example-mjauyaml)
+- [Why mjau?](#why-mjau)
+- [Contributing](#contributing)
+- [License](#license)
+- [Show Your Support](#show-your-support)
 
 ### What is mjau?
 
 mjau is a powerful and lightweight API testing tool that simplifies your testing process with a human-readable YAML-based syntax. Designed for developers and QA engineers who value speed and simplicity, mjau allows you to define and run complex test cases with minimal effort. As a single, portable binary, it runs anywhere, anytime, without any dependencies. Whether you're testing a simple endpoint or a complex API, mjau is the purr-fect tool for the job.
 
 ![mjau screenshot](other/screenshot.png)
+
+### Quick Start
+
+1.  **Install mjau**:
+
+    ```bash
+    curl -sL https://getmjau.dev/install.sh | bash
+    ```
+
+2.  **Initialize a sample config**:
+
+    ```bash
+    mjau init
+    ```
+
+3.  **Run the tests**:
+
+    ```bash
+    mjau runall
+    ```
 
 ### Installation
 
