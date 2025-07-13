@@ -43,7 +43,7 @@
 
 mjau is a powerful and lightweight API testing tool that simplifies your testing process with a human-readable YAML-based syntax. Designed for developers and QA engineers who value speed and simplicity, mjau allows you to define and run complex test cases with minimal effort. As a single, portable binary, it runs anywhere, anytime, without any dependencies. Whether you're testing a simple endpoint or a complex API, mjau is the purr-fect tool for the job.
 
-![mjau screenshot](other/screenshot.png)
+![mjau screenshot](other/screenshot.jpg)
 
 ### Quick Start
 
@@ -148,7 +148,6 @@ Assertions are used to validate the response of a request. The following compari
 - `<=`: Checks if the actual value is less than or equal to the expected value.
 - `contains`: Checks if the actual value contains the expected value.
 
-
 ### Built-in Functions
 
 The following built-in functions can be used in the `mjau.yaml` file:
@@ -232,3 +231,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Show Your Support
 
 If you like this project, please give it a star on GitHub! This will help other people discover the project and encourage me to continue working on it.
+
